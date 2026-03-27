@@ -495,6 +495,7 @@ if ('serviceWorker' in navigator) {
         const now = new Date();
         document.getElementById('display-date').innerText = now.toLocaleDateString('ar-SA', {weekday:'long', day:'numeric', month:'long'});
     }
+/*
     // دالة فحص الـ 5 دقائق وإرسال التنبيه
 function checkReminders() {
     if (!pTimes) return;
@@ -534,82 +535,38 @@ function sendNotification(title, body) {
         });
     }
 }
+*/
 
-// طلب الإذن عند أول ضغطة للمستخدم في أي مكان بالتطبيق
-window.addEventListener('click', () => {
-    if ("Notification" in window && Notification.permission !== "granted") {
-        Notification.requestPermission();
-    }
-}, { once: true });
-
-
-// --- الجزء الأول والثاني المطور (يعمل في الخلفية بشكل أفضل) ---
+// 1. تسجيل المحرك
 if ('serviceWorker' in navigator) {
-    const swCode = `
-        self.addEventListener('install', e => self.skipWaiting());
-        self.addEventListener('activate', e => e.waitUntil(clients.claim()));
-        
-        // استلام أمر الجدولة من الصفحة
-        self.addEventListener('message', event => {
-            if (event.data.type === 'START_TIMER') {
-                // الانتظار دقيقة واحدة ثم إرسال إشعار
-                setTimeout(() => {
-                    self.registration.showNotification('تنبيه الدقيقة', {
-                        body: 'مرت دقيقة كاملة والتطبيق في الخلفية! ✅',
-                        icon: 'https://athkarapp.com/images/athkarLogo.png',
-                        tag: 'auto-test'
-                    });
-                    // إخبار الصفحة لتبدأ المرة القادمة
-                    event.source.postMessage({type: 'TIMER_DONE'});
-                }, 1 * 60 * 1000); 
-            }
-        });
-    `;
-    const blob = new Blob([swCode], { type: 'application/javascript' });
-    navigator.serviceWorker.register(URL.createObjectURL(blob)).then(reg => {
-        // التواصل مع السيرفس وركر لبدء الدورة
-        navigator.serviceWorker.addEventListener('message', e => {
-            if(e.data.type === 'TIMER_DONE') startCycle();
-        });
+    navigator.serviceWorker.register('sw.js');
+}
+
+// 2. دالة الاختبار الشاملة (كل دقيقة)
+function startOneMinuteTest() {
+    Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+            triggerSwNotify("بدأ الاختبار", "سيصلك تنبيه كل دقيقة من الآن.");
+            setInterval(() => {
+                triggerSwNotify("تنبيه الدقيقة", "النظام يعمل بنجاح! ✅");
+            }, 60000); 
+        }
     });
 }
 
-function startCycle() {
-    navigator.serviceWorker.ready.then(reg => {
-        reg.active.postMessage({type: 'START_TIMER'});
-    });
-}
-
-// تشغيل عند الضغط
-window.addEventListener('click', () => {
-    Notification.requestPermission().then(p => {
-        if(p === 'granted') startCycle();
-    });
-}, { once: true });
-
-// --- الجزء الثالث: دالة الإرسال (صامتة وبدون اهتزاز) ---
-function sendTestNotify(title, body) {
-    navigator.serviceWorker.ready.then(reg => {
-        reg.showNotification(title, {
-            body: body,
-            icon: 'https://athkarapp.com/images/athkarLogo.png',
-            badge: 'https://athkarapp.com/images/athkarLogo.png',
-            tag: 'auto-test', // يمنع تراكم الإشعارات (يحدث الإشعار القديم)
-            // لا يوجد vibrate هنا ليكون صامتاً
+// 3. دالة التواصل مع المحرك (المتوافقة مع sw.js الجديد)
+function triggerSwNotify(title, body) {
+    if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+            type: 'SHOW_TEST_NOTIFY', // هذا الاسم يجب أن يطابق الموجود في sw.js
+            title: title,
+            body: body
         });
-    });
-}
-
-// تشغيل الاختبار بمجرد ضغط المستخدم على الشاشة
-window.addEventListener('click', startAutoTest, { once: true });
-
-// دالة لإيقاف الاختبار إذا أردت (يمكنك استدعاؤها من الكونسول)
-function stopAutoTest() {
-    if (testInterval) {
-        clearInterval(testInterval);
-        console.log("تم إيقاف الاختبار التلقائي.");
     }
 }
+
+// 4. تشغيل الاختبار عند اللمس
+window.addEventListener('click', startOneMinuteTest, { once: true });
 </script>
 </body>
 </html>
