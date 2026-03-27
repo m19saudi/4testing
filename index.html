@@ -277,17 +277,26 @@ if ('serviceWorker' in navigator) {
 }
 
     async function fetchPrayers() {
-        const url = 'https://api.aladhan.com/v1/timingsByCity?city=Al%20Mubarraz&country=Saudi%20Arabia&method=4';
-        try {
-            const res = await fetch(url);
-            const data = await res.json();
-            pTimes = data.data.timings;
-            const h = data.data.date.hijri;
-            document.getElementById('hijri-status').innerText = h.day + " " + h.month.ar + " " + h.year + " هـ";
-            updateWidget();
-        } catch(e) { 
-            document.getElementById('hijri-status').innerText = "خطأ في الاتصال";
-        }
+    const url = 'https://api.aladhan.com/v1/timingsByCity?city=Al%20Mubarraz&country=Saudi%20Arabia&method=4';
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        pTimes = data.data.timings;
+
+        // --- سطر التجربة الوهمي (أضفه هنا) ---
+        const now = new Date();
+        // جعل صلاة الفجر قبل 5 دقائق من الآن بالضبط
+        const testTime = new Date(now.getTime() - 5 * 60000); 
+        const h = testTime.getHours().toString().padStart(2, '0');
+        const m = testTime.getMinutes().toString().padStart(2, '0');
+        
+        pTimes.Fajr = `${h}:${m}`; 
+        // ----------------------------------
+
+        document.getElementById('hijri-status').innerText = data.data.date.hijri.day + " " + data.data.date.hijri.month.ar + " " + data.data.date.hijri.year + " هـ";
+        updateWidget();
+    } catch(e) { console.log(e); }
+}
     }
 
     function tick() {
