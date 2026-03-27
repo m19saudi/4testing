@@ -543,35 +543,49 @@ window.addEventListener('click', () => {
 }, { once: true });
 
 
-// --- الجزء الأول: تسجيل المحرك آلياً (بدون ملف خارجي) ---
+// --- الجزء الأول والثاني المطور (يعمل في الخلفية بشكل أفضل) ---
 if ('serviceWorker' in navigator) {
     const swCode = `
         self.addEventListener('install', e => self.skipWaiting());
         self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+        
+        // استلام أمر الجدولة من الصفحة
+        self.addEventListener('message', event => {
+            if (event.data.type === 'START_TIMER') {
+                // الانتظار دقيقة واحدة ثم إرسال إشعار
+                setTimeout(() => {
+                    self.registration.showNotification('تنبيه الدقيقة', {
+                        body: 'مرت دقيقة كاملة والتطبيق في الخلفية! ✅',
+                        icon: 'https://athkarapp.com/images/athkarLogo.png',
+                        tag: 'auto-test'
+                    });
+                    // إخبار الصفحة لتبدأ المرة القادمة
+                    event.source.postMessage({type: 'TIMER_DONE'});
+                }, 1 * 60 * 1000); 
+            }
+        });
     `;
     const blob = new Blob([swCode], { type: 'application/javascript' });
-    navigator.serviceWorker.register(URL.createObjectURL(blob));
-}
-
-// --- الجزء الثاني: منطق التكرار كل 5 دقائق ---
-let testInterval = null;
-
-function startAutoTest() {
-    // طلب الإذن أولاً
-    Notification.requestPermission().then(permission => {
-        if (permission === "granted") {
-            console.log("بدأ الاختبار التلقائي: إشعار كل 5 دقائق");
-            
-            // إرسال أول إشعار فوراً للتأكد
-            sendTestNotify("بدء الاختبار", "سيوصلك إشعار كل 5 دقائق من الآن.");
-
-            // تكرار الإرسال كل 5 دقائق (300,000 ميلي ثانية)
-            testInterval = setInterval(() => {
-                sendTestNotify("تنبيه دوري", "مرت 5 دقائق أخرى بنجاح.");
-            }, 1 * 60 * 1000);
-        }
+    navigator.serviceWorker.register(URL.createObjectURL(blob)).then(reg => {
+        // التواصل مع السيرفس وركر لبدء الدورة
+        navigator.serviceWorker.addEventListener('message', e => {
+            if(e.data.type === 'TIMER_DONE') startCycle();
+        });
     });
 }
+
+function startCycle() {
+    navigator.serviceWorker.ready.then(reg => {
+        reg.active.postMessage({type: 'START_TIMER'});
+    });
+}
+
+// تشغيل عند الضغط
+window.addEventListener('click', () => {
+    Notification.requestPermission().then(p => {
+        if(p === 'granted') startCycle();
+    });
+}, { once: true });
 
 // --- الجزء الثالث: دالة الإرسال (صامتة وبدون اهتزاز) ---
 function sendTestNotify(title, body) {
