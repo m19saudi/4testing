@@ -6,10 +6,19 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(clients.claim());
 });
 
-// هذا الجزء يستقبل أمر إظهار التنبيه
+// --- الجزء الجديد لاستقبال أمر التنبيه كل دقيقة ---
+self.addEventListener('message', (event) => {
+    if (event.data.type === 'SHOW_TEST_NOTIFY') {
+        self.registration.showNotification(event.data.title, {
+            body: event.data.body,
+            icon: 'https://athkarapp.com/images/athkarLogo.png',
+            badge: 'https://athkarapp.com/images/athkarLogo.png',
+            tag: 'test-notification'
+        });
+    }
+});
+
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    event.waitUntil(
-        clients.openWindow('/') // يفتح التطبيق عند الضغط على التنبيه
-    );
+    event.waitUntil(clients.openWindow('/'));
 });
