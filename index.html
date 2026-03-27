@@ -37,7 +37,7 @@
         
         #welcome-msg { cursor: pointer; user-select: none; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
         #welcome-msg:active { opacity: 0.6; transform: scale(0.95); }
-        #vib-icon { font-size: 1rem; margin-right: 5px; } /* تنسيق بسيط للأيقونة */
+        #vib-icon { font-size: 1rem; margin-right: 5px; }
 
         .nav-tabs { display: flex; overflow-x: auto; gap: 8px; padding: 5px 0; scrollbar-width: none; }
         .nav-tabs::-webkit-scrollbar { display: none; }
@@ -189,7 +189,7 @@
         t_style: localStorage.getItem('t_style') || 'ring',
         showWidget: localStorage.getItem('show_w') === 'true',
         wStyle: localStorage.getItem('w_style_pref') || 'new',
-        vibrate: localStorage.getItem('vibrate_on') !== 'false' // الاهتزاز مفعل افتراضياً
+        vibrate: localStorage.getItem('vibrate_on') !== 'false'
     };
 
     const MORNING_DATA = [
@@ -218,57 +218,33 @@
     if (state.e_counts.length === 0) state.e_counts = new Array(EVENING_DATA.length).fill(0);
 
     window.onload = () => {
-    // --- كود التصفير التلقائي اليومي ---
-    const today = new Date().toLocaleDateString(); // الحصول على تاريخ اليوم
-    const lastDate = localStorage.getItem('last_use_date');
-
-    if (lastDate !== today) {
-        // إذا كان التاريخ مختلفاً (يوم جديد)، صفر عدادات الأذكار
-        state.m_counts = new Array(MORNING_DATA.length).fill(0);
-        state.e_counts = new Array(EVENING_DATA.length).fill(0);
-        
-        // حفظ الأصفار الجديدة في الذاكرة
-        localStorage.setItem('m_c', JSON.stringify(state.m_counts));
-        localStorage.setItem('e_c', JSON.stringify(state.e_counts));
-        
-        // تحديث تاريخ آخر استخدام ليصبح "اليوم"
-        localStorage.setItem('last_use_date', today);
-    }
-    // --------------------------------
-
-    // بقية الأوامر الأصلية التي كانت موجودة لديك
-    document.body.setAttribute('data-theme', state.theme);
-    document.getElementById('widget-toggle').checked = state.showWidget;
-    applyTasbeehStyle();
-    updateDateDisplay();
-    fetchPrayers();
-    updateTasbeehUI();
-    renderAzkar('morning', MORNING_DATA, state.m_counts);
-    renderAzkar('evening', EVENING_DATA, state.e_counts);
-    updateWidgetVisibility();
-    updateVibrationUI();
-    
-    const slider = document.getElementById('slider');
-    slider.addEventListener('scroll', () => {
-        const i = Math.round(Math.abs(slider.scrollLeft) / window.innerWidth);
-        document.querySelectorAll('.tab').forEach((t, idx) => t.classList.toggle('active', idx === i));
-    });
-    setInterval(tick, 1000);
-    };
-
-    function toggleVibration() {
-        state.vibrate = !state.vibrate;
-        localStorage.setItem('vibrate_on', state.vibrate);
+        const today = new Date().toLocaleDateString();
+        const lastDate = localStorage.getItem('last_use_date');
+        if (lastDate !== today) {
+            state.m_counts = new Array(MORNING_DATA.length).fill(0);
+            state.e_counts = new Array(EVENING_DATA.length).fill(0);
+            localStorage.setItem('m_c', JSON.stringify(state.m_counts));
+            localStorage.setItem('e_c', JSON.stringify(state.e_counts));
+            localStorage.setItem('last_use_date', today);
+        }
+        document.body.setAttribute('data-theme', state.theme);
+        document.getElementById('widget-toggle').checked = state.showWidget;
+        applyTasbeehStyle();
+        updateDateDisplay();
+        fetchPrayers();
+        updateTasbeehUI();
+        renderAzkar('morning', MORNING_DATA, state.m_counts);
+        renderAzkar('evening', EVENING_DATA, state.e_counts);
+        updateWidgetVisibility();
         updateVibrationUI();
-        // اهتزاز خفيف للتأكيد عند التشغيل فقط
-        if(state.vibrate && navigator.vibrate) navigator.vibrate(50);
-    }
-
-    function updateVibrationUI() {
-    const icon = document.getElementById('vib-icon');
-    // إذا كان الاهتزاز معطلاً، اظهر أيقونة الصامت، وإذا كان يعمل اتركها فارغة
-    icon.innerText = state.vibrate ? "" : "🔇";
-}
+        
+        const slider = document.getElementById('slider');
+        slider.addEventListener('scroll', () => {
+            const i = Math.round(Math.abs(slider.scrollLeft) / window.innerWidth);
+            document.querySelectorAll('.tab').forEach((t, idx) => t.classList.toggle('active', idx === i));
+        });
+        setInterval(tick, 1000);
+    };
 
     async function fetchPrayers() {
         const url = 'https://api.aladhan.com/v1/timingsByCity?city=Al%20Mubarraz&country=Saudi%20Arabia&method=4';
@@ -294,74 +270,85 @@
     }
 
     function updateWidget() {
-    if (!pTimes) return;
-    const labels = {Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء'};
-    const iqamaMins = {Fajr:15, Dhuhr:15, Asr:15, Maghrib:10, Isha:10};
-    const now = new Date();
-    const keys = Object.keys(labels);
-    
-    let nextP = getNextPrayer(now, keys, labels);
-    const container = document.getElementById('modern-widget-content');
+        if (!pTimes) return;
+        const labels = {Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء'};
+        const iqamaMins = {Fajr:15, Dhuhr:15, Asr:15, Maghrib:10, Isha:10};
+        const now = new Date();
+        const keys = Object.keys(labels);
+        
+        let nextP = getNextPrayer(now, keys, labels);
+        const container = document.getElementById('modern-widget-content');
 
-    document.getElementById('btn-style-new').classList.toggle('active', state.wStyle === 'new');
-    document.getElementById('btn-style-old').classList.toggle('active', state.wStyle === 'old');
+        document.getElementById('btn-style-new').classList.toggle('active', state.wStyle === 'new');
+        document.getElementById('btn-style-old').classList.toggle('active', state.wStyle === 'old');
 
-    if (state.wStyle === 'old') {
-        let html = `<div class="old-widget-style">`;
-        keys.forEach(k => {
-            html += `<div class="old-item"><span>${labels[k]}</span><b>${format12(pTimes[k])}</b></div>`;
-        });
-        container.innerHTML = html + `</div>`;
-    } else {
-        const diff = Math.floor((nextP.t - now) / 1000);
-        const hh = Math.floor(diff / 3600);
-        const mm = Math.floor((diff % 3600) / 60);
-        const countdownStr = `بعد ${hh > 0 ? hh + ' س و' : ''}${mm} دقيقة`;
-
-        let html = `
-            <div class="modern-widget">
-                <div class="next-p-header">
-                    <div class="next-p-label">وقت الصلاة التالي: ${nextP.n} ${countdownStr}</div>
-                    <div class="next-p-time">${format12(pTimes[nextP.k])}</div>
-                </div>
-                <div class="prayer-list-rows">
-        `;
-
-        keys.forEach(k => {
-            const isNext = (k === nextP.k);
+        // البحث عن صلاة في فترة الإقامة الحالية
+        let currentInIqama = null;
+        for (let k of keys) {
             const [h, m] = pTimes[k].split(':');
             const pTime = new Date(); pTime.setHours(h, m, 0);
             const iqamaTime = new Date(pTime.getTime() + iqamaMins[k] * 60000);
-            
-            // التعديل هنا: تحويل وقت الإقامة للأرقام الهندية (١٢٣)
-            const iqamaStr = iqamaTime.toLocaleTimeString('ar-SA', {
-                hour: 'numeric', 
-                minute: '2-digit', 
-                numberingSystem: 'arab'
-            });
-            
-            let iqamaRem = "";
             if (now >= pTime && now < iqamaTime) {
-                const iDiff = Math.floor((iqamaTime - now) / 60000);
-                // تحويل رقم الدقائق المتبقية للهندي أيضاً
-                const iDiffAr = (iDiff + 1).toLocaleString('ar-SA');
-                iqamaRem = ` • <span style="color:#e63946">باقي ${iDiffAr} د</span>`;
+                currentInIqama = { k: k, name: labels[k], iqamaTime: iqamaTime, pTimeStr: pTimes[k] };
+                break;
+            }
+        }
+
+        if (state.wStyle === 'old') {
+            let html = `<div class="old-widget-style">`;
+            keys.forEach(k => {
+                const isCurrent = currentInIqama && k === currentInIqama.k;
+                html += `<div class="old-item" style="${isCurrent?'background:rgba(230,57,70,0.1);border-radius:5px':''}"><span>${labels[k]}</span><b>${format12(pTimes[k])}</b></div>`;
+            });
+            container.innerHTML = html + `</div>`;
+        } else {
+            let headerHtml = "";
+            if (currentInIqama) {
+                const diff = Math.floor((currentInIqama.iqamaTime - now) / 1000);
+                const mm = Math.floor(diff / 60); const ss = diff % 60;
+                const countdownStr = `${mm}:${ss < 10 ? '0'+ss : ss}`;
+                headerHtml = `
+                    <div class="next-p-header">
+                        <div class="next-p-label" style="color: #e63946; font-weight: bold;">دخل وقت أذان ${currentInIqama.name}</div>
+                        <div class="next-p-time" style="color: #e63946;">${format12(currentInIqama.pTimeStr)}</div>
+                        <div style="font-size: 1rem; margin-top: 5px; opacity: 0.9;">باقي على الإقامة: ${countdownStr}</div>
+                    </div>`;
+            } else {
+                const diff = Math.floor((nextP.t - now) / 1000);
+                const hh = Math.floor(diff / 3600); const mm = Math.floor((diff % 3600) / 60);
+                headerHtml = `
+                    <div class="next-p-header">
+                        <div class="next-p-label">وقت الصلاة التالي: ${nextP.n} بعد ${hh > 0 ? hh + ' س و' : ''}${mm} دقيقة</div>
+                        <div class="next-p-time">${format12(pTimes[nextP.k])}</div>
+                    </div>`;
             }
 
-            html += `
-                <div class="p-row ${isNext ? 'active' : ''}">
-                    <div class="p-info-box">
-                        <span class="p-name">${labels[k]}</span>
-                        <span class="p-iqama">الإقامة: ${iqamaStr}${iqamaRem}</span>
-                    </div>
-                    <span class="p-time">${format12(pTimes[k])}</span>
-                </div>
-            `;
-        });
-        container.innerHTML = html + `</div></div>`;
+            let rowsHtml = '<div class="prayer-list-rows">';
+            keys.forEach(k => {
+                const isActive = currentInIqama ? (k === currentInIqama.k) : (k === nextP.k);
+                const [h, m] = pTimes[k].split(':');
+                const pTime = new Date(); pTime.setHours(h, m, 0);
+                const iqamaTime = new Date(pTime.getTime() + iqamaMins[k] * 60000);
+                const iqamaStr = iqamaTime.toLocaleTimeString('ar-SA', {hour:'numeric', minute:'2-digit', numberingSystem:'arab'});
+                
+                let iqamaStatus = `الإقامة: ${iqamaStr}`;
+                if (currentInIqama && k === currentInIqama.k) {
+                    const iDiff = Math.ceil((currentInIqama.iqamaTime - now) / 60000);
+                    iqamaStatus += ` • <span style="color:#e63946">باقي ${iDiff.toLocaleString('ar-SA')} د</span>`;
+                }
+
+                rowsHtml += `
+                    <div class="p-row ${isActive ? 'active' : ''}">
+                        <div class="p-info-box">
+                            <span class="p-name">${labels[k]}</span>
+                            <span class="p-iqama">${iqamaStatus}</span>
+                        </div>
+                        <span class="p-time">${format12(pTimes[k])}</span>
+                    </div>`;
+            });
+            container.innerHTML = `<div class="modern-widget">${headerHtml}${rowsHtml}</div></div>`;
+        }
     }
-}
-    
 
     function getNextPrayer(now, keys, labels) {
         for (let k of keys) {
@@ -378,39 +365,48 @@
         if(!pTimes) return;
         const now = new Date();
         const labels = {Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء'};
-        const next = getNextPrayer(now, Object.keys(labels), labels);
-        
-        const diff = Math.floor((next.t - now) / 1000);
-        const hh = Math.floor(diff / 3600);
-        const mm = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
-        const ss = diff % 60;
-        
-        const timeStr = `${hh > 0 ? hh + ':' : ''}${mm}:${ss < 10 ? '0'+ss : ss}`;
-        document.getElementById('next-prayer-countdown').innerText = `صلاة ${next.n} خلال ${timeStr}`;
+        const iqamaMins = {Fajr:15, Dhuhr:15, Asr:15, Maghrib:10, Isha:10};
+        const keys = Object.keys(labels);
+        let displayNode = document.getElementById('next-prayer-countdown');
+
+        let currentInIqama = null;
+        for (let k of keys) {
+            const [h, m] = pTimes[k].split(':');
+            const pTime = new Date(); pTime.setHours(h, m, 0);
+            const iqamaTime = new Date(pTime.getTime() + iqamaMins[k] * 60000);
+            if (now >= pTime && now < iqamaTime) {
+                currentInIqama = { name: labels[k], time: iqamaTime }; break;
+            }
+        }
+
+        if (currentInIqama) {
+            const diff = Math.floor((currentInIqama.time - now) / 1000);
+            const mm = Math.floor(diff / 60); const ss = diff % 60;
+            displayNode.innerHTML = `<span style="color: #e63946;">دخل وقت أذان ${currentInIqama.name}</span><br><span style="font-size:0.9rem; opacity:0.8">باقي على الإقامة: ${mm}:${ss < 10 ? '0'+ss : ss}</span>`;
+        } else {
+            const next = getNextPrayer(now, keys, labels);
+            const diff = Math.floor((next.t - now) / 1000);
+            const hh = Math.floor(diff / 3600);
+            const mm = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
+            const ss = diff % 60;
+            const timeStr = `${hh > 0 ? hh + ':' : ''}${mm}:${ss < 10 ? '0'+ss : ss}`;
+            displayNode.style.color = "var(--text)";
+            displayNode.innerText = `صلاة ${next.n} خلال ${timeStr}`;
+        }
     }
 
-    function setWStyle(s) {
-        state.wStyle = s;
-        localStorage.setItem('w_style_pref', s);
-        updateWidget();
-    }
-
-    function toggleWidgetView() {
-        state.showWidget = document.getElementById('widget-toggle').checked;
-        localStorage.setItem('show_w', state.showWidget);
-        updateWidgetVisibility();
-    }
-
-    function updateWidgetVisibility() {
-        document.getElementById('home-prayer-widget').classList.toggle('hidden', !state.showWidget);
-    }
-
+    function setWStyle(s) { state.wStyle = s; localStorage.setItem('w_style_pref', s); updateWidget(); }
+    function toggleWidgetView() { state.showWidget = document.getElementById('widget-toggle').checked; localStorage.setItem('show_w', state.showWidget); updateWidgetVisibility(); }
+    function updateWidgetVisibility() { document.getElementById('home-prayer-widget').classList.toggle('hidden', !state.showWidget); }
     function renderPrayerList() {
         const container = document.getElementById('prayer-list');
         const labels = {Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء'};
+        const now = new Date(); const keys = Object.keys(labels);
+        let nextP = getNextPrayer(now, keys, labels);
         let html = '';
-        Object.keys(labels).forEach(k => {
-            html += `<div class="p-row"><span>${labels[k]}</span><b>${format12(pTimes[k])}</b></div>`;
+        keys.forEach(k => {
+            const isActive = (k === nextP.k);
+            html += `<div class="p-row ${isActive ? 'active' : ''}"><span>${labels[k]}</span><b>${format12(pTimes[k])}</b></div>`;
         });
         container.innerHTML = html;
     }
@@ -434,7 +430,6 @@
             counts[i]++;
             localStorage.setItem(type === 'morning' ? 'm_c' : 'e_c', JSON.stringify(counts));
             renderAzkar(type, data, counts);
-            // تفعيل الاهتزاز فقط إذا كانت الحالة ON
             if(state.vibrate && navigator.vibrate) navigator.vibrate(35);
         }
     }
@@ -445,7 +440,6 @@
         if(state.tasbeeh > goal) state.tasbeeh = 1;
         updateTasbeehUI();
         localStorage.setItem('t_v', state.tasbeeh);
-        // تفعيل الاهتزاز فقط إذا كانت الحالة ON
         if(state.vibrate && navigator.vibrate) navigator.vibrate(45);
     }
 
@@ -456,38 +450,15 @@
         document.getElementById('ring-progress').style.strokeDashoffset = offset;
     }
 
-    function toggleTasbeehStyle() {
-        state.t_style = state.t_style === 'ring' ? 'number' : 'ring';
-        localStorage.setItem('t_style', state.t_style);
-        applyTasbeehStyle();
-    }
-
-    function applyTasbeehStyle() {
-        document.getElementById('style-ring').classList.toggle('hidden', state.t_style !== 'ring');
-        document.getElementById('style-number').classList.toggle('hidden', state.t_style !== 'number');
-    }
-
+    function toggleTasbeehStyle() { state.t_style = state.t_style === 'ring' ? 'number' : 'ring'; localStorage.setItem('t_style', state.t_style); applyTasbeehStyle(); }
+    function applyTasbeehStyle() { document.getElementById('style-ring').classList.toggle('hidden', state.t_style !== 'ring'); document.getElementById('style-number').classList.toggle('hidden', state.t_style !== 'number'); }
     function resetTasbeeh() { state.tasbeeh = 0; updateTasbeehUI(); localStorage.setItem('t_v', 0); }
     function jump(i) { document.getElementById('slider').scrollTo({ left: -window.innerWidth * i, behavior: 'smooth' }); }
-    
-    function toggleTheme() {
-        state.theme = state.theme === 'light' ? 'dark' : 'light';
-        document.body.setAttribute('data-theme', state.theme);
-        localStorage.setItem('theme', state.theme);
-    }
-
-    function format12(t) {
-        if(!t) return "";
-        let [h, m] = t.split(':');
-        let s = h >= 12 ? 'م' : 'ص';
-        h = h % 12 || 12;
-        return `${h}:${m} ${s}`;
-    }
-
-    function updateDateDisplay() {
-        const now = new Date();
-        document.getElementById('display-date').innerText = now.toLocaleDateString('ar-SA', {weekday:'long', day:'numeric', month:'long'});
-    }
+    function toggleTheme() { state.theme = state.theme === 'light' ? 'dark' : 'light'; document.body.setAttribute('data-theme', state.theme); localStorage.setItem('theme', state.theme); }
+    function toggleVibration() { state.vibrate = !state.vibrate; localStorage.setItem('vibrate_on', state.vibrate); updateVibrationUI(); if(state.vibrate && navigator.vibrate) navigator.vibrate(50); }
+    function updateVibrationUI() { document.getElementById('vib-icon').innerText = state.vibrate ? "" : "🔇"; }
+    function format12(t) { if(!t) return ""; let [h, m] = t.split(':'); let s = h >= 12 ? 'م' : 'ص'; h = h % 12 || 12; return `${h}:${m} ${s}`; }
+    function updateDateDisplay() { const now = new Date(); document.getElementById('display-date').innerText = now.toLocaleDateString('ar-SA', {weekday:'long', day:'numeric', month:'long'}); }
 </script>
 </body>
 </html>
