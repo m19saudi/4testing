@@ -180,12 +180,6 @@
 </div>
 
 <script>
-    // تسجيل محرك الخلفية (Service Worker)
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').then(reg => {
-        console.log('Service Worker Registered!', reg);
-    }).catch(err => console.log('SW Registration Failed', err));
-}
     let pTimes = null;
     let state = {
         tasbeeh: parseInt(localStorage.getItem('t_v')) || 0,
@@ -296,7 +290,6 @@ if ('serviceWorker' in navigator) {
             updateCountdown(); 
             updateWidget(); 
             renderPrayerList();
-            //checkReminders(); // <--- أضف هذا السطر هنا ليفحص الوقت باستمرار
         }
     }
 
@@ -495,78 +488,6 @@ if ('serviceWorker' in navigator) {
         const now = new Date();
         document.getElementById('display-date').innerText = now.toLocaleDateString('ar-SA', {weekday:'long', day:'numeric', month:'long'});
     }
-/*
-    // دالة فحص الـ 5 دقائق وإرسال التنبيه
-function checkReminders() {
-    if (!pTimes) return;
-    const now = new Date();
-    const labels = {Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء'};
-
-    for (let k in labels) {
-        // --- إضافة هذا السطر لتجاهل الفجر ---
-        if (k === 'Fajr') continue;
-        //
-        
-        const [h, m] = pTimes[k].split(':');
-        const pTime = new Date(); pTime.setHours(h, m, 0);
-        const alertTime = new Date(pTime.getTime() + 5 * 60000); // وقت الأذان + 5 دقائق
-
-        // الفحص بالدقيقة
-        if (now.getHours() === alertTime.getHours() && now.getMinutes() === alertTime.getMinutes()) {
-            const key = `notified_${k}_${now.toDateString()}`;
-            if (!localStorage.getItem(key)) {
-                sendNotification(`تذكير صلاة ${labels[k]}`, `مرت 5 دقائق على الأذان، حان وقت الصلاة.`);
-                localStorage.setItem(key, 'true');
-            }
-        }
-    }
-}
-
-// دالة إرسال الإشعار والاهتزاز
-function sendNotification(title, body) {
-    if (Notification.permission === "granted") {
-        navigator.serviceWorker.ready.then(reg => {
-            reg.showNotification(title, {
-                body: body,
-                icon: 'https://athkarapp.com/images/athkarLogo.png',
-                badge: 'https://athkarapp.com/images/athkarLogo.png',
-                tag: 'prayer-reminder' // لمنع تكرار الإشعارات المتراكمة
-            });
-        });
-    }
-}
-*/
-
-// 1. تسجيل المحرك
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-}
-
-// 2. دالة الاختبار الشاملة (كل دقيقة)
-function startOneMinuteTest() {
-    Notification.requestPermission().then(permission => {
-        if (permission === "granted") {
-            triggerSwNotify("بدأ الاختبار", "سيصلك تنبيه كل دقيقة من الآن.");
-            setInterval(() => {
-                triggerSwNotify("تنبيه الدقيقة", "النظام يعمل بنجاح! ✅");
-            }, 60000); 
-        }
-    });
-}
-
-// 3. دالة التواصل مع المحرك (المتوافقة مع sw.js الجديد)
-function triggerSwNotify(title, body) {
-    if (navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-            type: 'SHOW_TEST_NOTIFY', // هذا الاسم يجب أن يطابق الموجود في sw.js
-            title: title,
-            body: body
-        });
-    }
-}
-
-// 4. تشغيل الاختبار عند اللمس
-window.addEventListener('click', startOneMinuteTest, { once: true });
 </script>
 </body>
 </html>
