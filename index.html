@@ -294,65 +294,74 @@
     }
 
     function updateWidget() {
-        if (!pTimes) return;
-        const labels = {Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء'};
-        const iqamaMins = {Fajr:15, Dhuhr:15, Asr:15, Maghrib:10, Isha:10};
-        const now = new Date();
-        const keys = Object.keys(labels);
-        
-        let nextP = getNextPrayer(now, keys, labels);
-        const container = document.getElementById('modern-widget-content');
+    if (!pTimes) return;
+    const labels = {Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء'};
+    const iqamaMins = {Fajr:15, Dhuhr:15, Asr:15, Maghrib:10, Isha:10};
+    const now = new Date();
+    const keys = Object.keys(labels);
+    
+    let nextP = getNextPrayer(now, keys, labels);
+    const container = document.getElementById('modern-widget-content');
 
-        document.getElementById('btn-style-new').classList.toggle('active', state.wStyle === 'new');
-        document.getElementById('btn-style-old').classList.toggle('active', state.wStyle === 'old');
+    document.getElementById('btn-style-new').classList.toggle('active', state.wStyle === 'new');
+    document.getElementById('btn-style-old').classList.toggle('active', state.wStyle === 'old');
 
-        if (state.wStyle === 'old') {
-            let html = `<div class="old-widget-style">`;
-            keys.forEach(k => {
-                html += `<div class="old-item"><span>${labels[k]}</span><b>${format12(pTimes[k])}</b></div>`;
+    if (state.wStyle === 'old') {
+        let html = `<div class="old-widget-style">`;
+        keys.forEach(k => {
+            html += `<div class="old-item"><span>${labels[k]}</span><b>${format12(pTimes[k])}</b></div>`;
+        });
+        container.innerHTML = html + `</div>`;
+    } else {
+        const diff = Math.floor((nextP.t - now) / 1000);
+        const hh = Math.floor(diff / 3600);
+        const mm = Math.floor((diff % 3600) / 60);
+        const countdownStr = `بعد ${hh > 0 ? hh + ' س و' : ''}${mm} دقيقة`;
+
+        let html = `
+            <div class="modern-widget">
+                <div class="next-p-header">
+                    <div class="next-p-label">وقت الصلاة التالي: ${nextP.n} ${countdownStr}</div>
+                    <div class="next-p-time">${format12(pTimes[nextP.k])}</div>
+                </div>
+                <div class="prayer-list-rows">
+        `;
+
+        keys.forEach(k => {
+            const isNext = (k === nextP.k);
+            const [h, m] = pTimes[k].split(':');
+            const pTime = new Date(); pTime.setHours(h, m, 0);
+            const iqamaTime = new Date(pTime.getTime() + iqamaMins[k] * 60000);
+            
+            // التعديل هنا: تحويل وقت الإقامة للأرقام الهندية (١٢٣)
+            const iqamaStr = iqamaTime.toLocaleTimeString('ar-SA', {
+                hour: 'numeric', 
+                minute: '2-digit', 
+                numberingSystem: 'arab'
             });
-            container.innerHTML = html + `</div>`;
-        } else {
-            const diff = Math.floor((nextP.t - now) / 1000);
-            const hh = Math.floor(diff / 3600);
-            const mm = Math.floor((diff % 3600) / 60);
-            const countdownStr = `بعد ${hh > 0 ? hh + ' س و' : ''}${mm} دقيقة`;
+            
+            let iqamaRem = "";
+            if (now >= pTime && now < iqamaTime) {
+                const iDiff = Math.floor((iqamaTime - now) / 60000);
+                // تحويل رقم الدقائق المتبقية للهندي أيضاً
+                const iDiffAr = (iDiff + 1).toLocaleString('ar-SA');
+                iqamaRem = ` • <span style="color:#e63946">باقي ${iDiffAr} د</span>`;
+            }
 
-            let html = `
-                <div class="modern-widget">
-                    <div class="next-p-header">
-                        <div class="next-p-label">وقت الصلاة التالي: ${nextP.n} ${countdownStr}</div>
-                        <div class="next-p-time">${format12(pTimes[nextP.k])}</div>
+            html += `
+                <div class="p-row ${isNext ? 'active' : ''}">
+                    <div class="p-info-box">
+                        <span class="p-name">${labels[k]}</span>
+                        <span class="p-iqama">الإقامة: ${iqamaStr}${iqamaRem}</span>
                     </div>
-                    <div class="prayer-list-rows">
+                    <span class="p-time">${format12(pTimes[k])}</span>
+                </div>
             `;
-
-            keys.forEach(k => {
-                const isNext = (k === nextP.k);
-                const [h, m] = pTimes[k].split(':');
-                const pTime = new Date(); pTime.setHours(h, m, 0);
-                const iqamaTime = new Date(pTime.getTime() + iqamaMins[k] * 60000);
-                const iqamaStr = format12(iqamaTime.getHours() + ":" + iqamaTime.getMinutes());
-                
-                let iqamaRem = "";
-                if (now >= pTime && now < iqamaTime) {
-                    const iDiff = Math.floor((iqamaTime - now) / 60000);
-                    iqamaRem = ` • <span style="color:#e63946">باقي ${iDiff + 1} د</span>`;
-                }
-
-                html += `
-                    <div class="p-row ${isNext ? 'active' : ''}">
-                        <div class="p-info-box">
-                            <span class="p-name">${labels[k]}</span>
-                            <span class="p-iqama">الإقامة: ${iqamaStr}${iqamaRem}</span>
-                        </div>
-                        <span class="p-time">${format12(pTimes[k])}</span>
-                    </div>
-                `;
-            });
-            container.innerHTML = html + `</div></div>`;
-        }
+        });
+        container.innerHTML = html + `</div></div>`;
     }
+}
+    
 
     function getNextPrayer(now, keys, labels) {
         for (let k of keys) {
