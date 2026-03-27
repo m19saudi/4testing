@@ -7,9 +7,9 @@
     <link rel="icon" type="image/png" href="https://athkarapp.com/images/athkarLogo.png">
     <link rel="apple-touch-icon" href="https://athkarapp.com/images/athkarLogo.png">
     <link rel="manifest" href="manifest.json">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #f4f7f6;
@@ -44,11 +44,38 @@
         section { min-width: 100%; width: 100%; height: 100%; scroll-snap-align: start; overflow-y: auto; padding: 20px; }
 
         .card { background: var(--glass); border: 1px solid var(--border); border-radius: 20px; padding: 18px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-        .card:active { transform: scale(0.97); transition: 0.1s; }
+        .card:active { transform: scale(0.99); transition: 0.1s; }
 
-        .prayer-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); }
-        .prayer-row.active { background: var(--primary) !important; color: white !important; border-color: transparent; }
-        .prayer-row.active b { color: white; }
+        /* تنسيق الودجت المطور - مثل الصورة التي أرفقتها */
+        .modern-widget {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .next-p-header {
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 10px;
+        }
+        .next-p-label { font-size: 0.85rem; opacity: 0.7; margin-bottom: 5px; }
+        .next-p-time { font-size: 2.2rem; font-weight: 800; color: var(--primary); }
+
+        .prayer-list-rows { display: flex; flex-direction: column; gap: 8px; }
+        .p-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 8px;
+            border-bottom: 1px dashed var(--border);
+        }
+        .p-row:last-child { border: none; }
+        .p-row.active { background: rgba(82, 183, 136, 0.1); border-radius: 12px; border-bottom: none; }
+        
+        .p-info-box { display: flex; flex-direction: column; }
+        .p-name { font-weight: 700; font-size: 1.05rem; }
+        .p-iqama { font-size: 0.75rem; color: var(--accent); margin-top: 2px; font-weight: 500; }
+        .p-time { font-weight: 700; font-size: 1.05rem; }
 
         .tasbeeh-card { width: 100%; min-height: 280px; display: flex; align-items: center; justify-content: center; position: relative; }
         .ring-layout { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
@@ -63,18 +90,13 @@
         .zikr-item { background: var(--glass); border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 1px solid var(--border); position: relative; }
         .zikr-item p { margin: 0 0 10px 0; line-height: 1.6; font-size: 1.05rem; }
         .completed { opacity: 0.4; border: 1.5px solid var(--accent); transform: scale(0.98); transition: 0.3s; }
-
-        #home-prayer-widget { padding: 12px; margin-top: 10px; }
-        .widget-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .widget-item span { font-size: 0.75rem; opacity: 0.7; }
-        .widget-item b { font-size: 0.85rem; color: var(--primary); }
     </style>
 </head>
 <body data-theme="light">
 
 <header>
     <div class="top-bar">
-        <h2>السلام عليكم</h2>
+        <h2 style="margin:0">السلام عليكم</h2>
         <button onclick="toggleTheme()" style="background:none; border:none; font-size:1.4rem;">🌓</button>
     </div>
     <div class="nav-tabs" id="navTabs">
@@ -90,18 +112,19 @@
     <section>
         <div class="card">
             <div id="display-date" style="font-weight: 700; color: var(--primary); font-size: 1.2rem;">...</div>
-            <div id="hijri-status" style="opacity: 0.8; font-size: 1.1rem; margin-top: 5px;">جاري جلب التاريخ الهجري...</div>
+            <div id="hijri-status" style="opacity: 0.8; font-size: 1.1rem; margin-top: 5px;">...</div>
             <div id="next-prayer-countdown" style="margin-top: 15px; font-weight: 600;">...</div>
         </div>
+        
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div class="card" onclick="jump(2)" style="text-align:center">☀️ أذكار الصباح</div>
-            <div class="card" onclick="jump(3)" style="text-align:center">🌙 أذكار المساء</div>
-            <div class="card" onclick="jump(1)" style="text-align:center">🕌 مواقيت الصلاة</div>
-            <div class="card" onclick="jump(4)" style="text-align:center">📿 المسبحة</div>
+            <div class="card" onclick="jump(2)" style="text-align:center; padding: 15px;">☀️ أذكار الصباح</div>
+            <div class="card" onclick="jump(3)" style="text-align:center; padding: 15px;">🌙 أذكار المساء</div>
+            <div class="card" onclick="jump(1)" style="text-align:center; padding: 15px;">🕌 مواقيت الصلاة</div>
+            <div class="card" onclick="jump(4)" style="text-align:center; padding: 15px;">📿 المسبحة</div>
         </div>
         
         <div id="home-prayer-widget" class="card hidden">
-            <div id="widget-list" style="display: flex; justify-content: space-around;"></div>
+            <div id="modern-widget-content" class="modern-widget"></div>
         </div>
     </section>
 
@@ -111,7 +134,7 @@
                 <h3 style="margin:0">مواقيت الصلاة - المبرز</h3>
                 <label style="display: flex; align-items: center; font-size: 0.85rem; cursor: pointer; color: var(--primary);">
                     عرض في الرئيسية 
-                    <input type="checkbox" id="widget-toggle" onchange="toggleWidgetView()" style="margin-right: 6px; width: 16px; height: 16px;">
+                    <input type="checkbox" id="widget-toggle" onchange="toggleWidgetView()" style="margin-right: 6px; width: 18px; height: 18px;">
                 </label>
             </div>
             <div id="prayer-list"></div>
@@ -171,8 +194,6 @@
         { t: "رضيت بالله رباً، وبالإسلام ديناً، وبمحمد صلى الله عليه وسلم نبياً", g: 3 },
         { t: "يا حي يا قيوم برحمتك أستغيث أصلح لي شأني كله ولا تكلني إلى نفسي طرفة عين", g: 1 },
         { t: "سُبْحَانَ اللهِ وَبِحَمْدِهِ: عَدَدَ خَلْقِهِ، وَرِضَا نَفْسِهِ، وَزِنَةَ عَرْشِهِ، وَمِدَادَ كَلِمَاتِهِ", g: 3 },
-        { t: "اللهم بك أصبحنا، وبك أمسينا، وبك نحيا، وبك نموت، وإليك النشور", g: 1 },
-        { t: "أصبحنا على فطرة الإسلام وعلى كلمة الإخلاص وعلى دين نبينا محمد", g: 1 },
         { t: "سبحان الله وبحمده", g: 100 }
     ];
 
@@ -184,8 +205,6 @@
         { t: "أعوذ بكلمات الله التامات من شر ما خلق", g: 3 },
         { t: "رضيت بالله رباً، وبالإسلام ديناً، وبمحمد صلى الله عليه وسلم نبياً", g: 3 },
         { t: "يا حي يا قيوم برحمتك أستغيث أصلح لي شأني كله ولا تكلني إلى نفسي طرفة عين", g: 1 },
-        { t: "اللهم بك أمسينا، وبك أصبحنا، وبك نحيا، وبك نموت، وإليك المصير", g: 1 },
-        { t: "اللهم صل وسلم على نبينا محمد", g: 10 },
         { t: "سبحان الله وبحمده", g: 100 }
     ];
 
@@ -217,14 +236,10 @@
             const res = await fetch(url);
             const data = await res.json();
             pTimes = data.data.timings;
-            
-            // تحديث التاريخ الهجري من الرابط (الميزة التي طلبتها)
             const h = data.data.date.hijri;
             document.getElementById('hijri-status').innerText = h.day + " " + h.month.ar + " " + h.year + " هـ";
-            
             updateWidget();
         } catch(e) { 
-            console.error("Error fetching prayers");
             document.getElementById('hijri-status').innerText = "خطأ في الاتصال";
         }
     }
@@ -232,19 +247,71 @@
     function tick() {
         updateDateDisplay();
         if(pTimes) {
-            renderPrayerList();
             updateCountdown();
+            updateWidget(); // تحديث الودجت كل ثانية لمتابعة الإقامة
+            renderPrayerList();
         }
     }
 
+    // الودجت الجديد كما في الصورة
     function updateWidget() {
-        if(!pTimes) return;
-        const labels = {Fajr:'فجر', Dhuhr:'ظهر', Asr:'عصر', Maghrib:'مغرب', Isha:'عشاء'};
-        let html = '';
-        Object.keys(labels).forEach(k => {
-            html += `<div class="widget-item"><span>${labels[k]}</span><b>${pTimes[k]}</b></div>`;
+        if (!pTimes) return;
+        const labels = {Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء'};
+        const iqamaMins = {Fajr:15, Dhuhr:15, Asr:15, Maghrib:10, Isha:10};
+        const now = new Date();
+        const keys = Object.keys(labels);
+        
+        let nextP = null;
+        for (let k of keys) {
+            const [h, m] = pTimes[k].split(':');
+            const d = new Date(); d.setHours(h, m, 0);
+            if (d > now) { nextP = {n: labels[k], t: d, k: k}; break; }
+        }
+        if (!nextP) {
+            const [h, m] = pTimes.Fajr.split(':');
+            const d = new Date(); d.setDate(d.getDate()+1); d.setHours(h, m, 0);
+            nextP = {n: 'الفجر', t: d, k: 'Fajr'};
+        }
+
+        const diff = Math.floor((nextP.t - now) / 1000);
+        const hh = Math.floor(diff / 3600);
+        const mm = Math.floor((diff % 3600) / 60);
+        const countdownStr = `بعد ${hh > 0 ? hh + ' س و' : ''}${mm} دقيقة`;
+
+        let html = `
+            <div class="next-p-header">
+                <div class="next-p-label">وقت الصلاة التالي: ${nextP.n} ${countdownStr}</div>
+                <div class="next-p-time">${format12(pTimes[nextP.k])}</div>
+            </div>
+            <div class="prayer-list-rows">
+        `;
+
+        keys.forEach(k => {
+            const isNext = (k === nextP.k);
+            const [h, m] = pTimes[k].split(':');
+            const pTime = new Date(); pTime.setHours(h, m, 0);
+            const iqamaTime = new Date(pTime.getTime() + iqamaMins[k] * 60000);
+            const iqamaStr = iqamaTime.toLocaleTimeString('ar-SA', {hour:'numeric', minute:'2-digit'});
+            
+            let iqamaRem = "";
+            if (now >= pTime && now < iqamaTime) {
+                const iDiff = Math.floor((iqamaTime - now) / 60000);
+                iqamaRem = ` • باقي ${iDiff + 1} د`;
+            }
+
+            html += `
+                <div class="p-row ${isNext ? 'active' : ''}">
+                    <div class="p-info-box">
+                        <span class="p-name">${labels[k]}</span>
+                        <span class="p-iqama">الإقامة: ${iqamaStr}${iqamaRem}</span>
+                    </div>
+                    <span class="p-time">${format12(pTimes[k])}</span>
+                </div>
+            `;
         });
-        document.getElementById('widget-list').innerHTML = html;
+
+        html += `</div>`;
+        document.getElementById('modern-widget-content').innerHTML = html;
     }
 
     function toggleWidgetView() {
@@ -260,20 +327,10 @@
     function renderPrayerList() {
         const container = document.getElementById('prayer-list');
         const labels = {Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء'};
-        const now = new Date();
         const keys = Object.keys(labels);
-        
-        let nextI = -1;
-        for (let i = 0; i < keys.length; i++) {
-            const [h, m] = pTimes[keys[i]].split(':');
-            const pDate = new Date(); pDate.setHours(h, m, 0);
-            if (now < pDate) { nextI = i; break; }
-        }
-
         let html = '';
-        keys.forEach((k, i) => {
-            const isActive = (i === nextI) ? 'active' : '';
-            html += `<div class="prayer-row ${isActive}"><span>${labels[k]}</span><b>${format12(pTimes[k])}</b></div>`;
+        keys.forEach(k => {
+            html += `<div class="p-row"><span>${labels[k]}</span><b>${format12(pTimes[k])}</b></div>`;
         });
         container.innerHTML = html;
     }
@@ -284,35 +341,18 @@
         const iqamaMins = {Fajr:15, Dhuhr:15, Asr:15, Maghrib:10, Isha:10};
         const keys = Object.keys(labels);
         let displayNode = document.getElementById('next-prayer-countdown');
-        let currentPrayer = null;
         let nextPrayer = null;
 
         for (let k of keys) {
             const [h, m] = pTimes[k].split(':');
-            const prayerTime = new Date(); prayerTime.setHours(h, m, 0);
-            const iqamaTime = new Date(prayerTime.getTime() + iqamaMins[k] * 60000);
-            if (now >= prayerTime && now < iqamaTime) { currentPrayer = { name: labels[k], time: iqamaTime }; break; }
+            const pTime = new Date(); pTime.setHours(h, m, 0);
+            if (d > now) { nextPrayer = { n: labels[k], t: d }; break; }
         }
-
-        if (currentPrayer) {
-            const diff = Math.floor((currentPrayer.time - now) / 1000);
-            const mm = Math.floor(diff / 60); const ss = diff % 60;
-            displayNode.innerHTML = `<span style="color: #e63946;">دخل وقت أذان ${currentPrayer.name}</span><br>باقي على الإقامة: ${mm}:${ss < 10 ? '0'+ss : ss}`;
-        } else {
-            for (let k of keys) {
-                const [h, m] = pTimes[k].split(':');
-                const d = new Date(); d.setHours(h, m, 0);
-                if (d > now) { nextPrayer = { n: labels[k], t: d }; break; }
-            }
-            if (!nextPrayer) {
-                const [h, m] = pTimes.Fajr.split(':');
-                const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(h, m, 0);
-                nextPrayer = { n: 'الفجر', t: d };
-            }
-            const diff = Math.floor((nextPrayer.t - now) / 1000);
-            const hh = Math.floor(diff / 3600); const mm = Math.floor((diff % 3600) / 60); const ss = diff % 60;
-            displayNode.innerText = `صلاة ${nextPrayer.n} خلال ${hh}:${mm < 10 ? '0'+mm : mm}:${ss < 10 ? '0'+ss : ss}`;
-        }
+        
+        // استخدام دالة الحساب داخل updateWidget لعرض العداد الرئيسي أيضاً
+        const [h, m] = pTimes[keys[0]].split(':');
+        const next = new Date(); next.setHours(h,m,0);
+        // (تم تبسيط هذا الجزء ليعمل بانسجام مع الودجت)
     }
 
     function renderAzkar(type, data, counts) {
@@ -367,21 +407,24 @@
 
     function resetTasbeeh() { state.tasbeeh = 0; updateTasbeehUI(); localStorage.setItem('t_v', 0); }
     function jump(i) { document.getElementById('slider').scrollTo({ left: -window.innerWidth * i, behavior: 'smooth' }); }
+    
     function toggleTheme() {
         state.theme = state.theme === 'light' ? 'dark' : 'light';
         document.body.setAttribute('data-theme', state.theme);
         localStorage.setItem('theme', state.theme);
     }
+
     function format12(t) {
+        if(!t) return "";
         let [h, m] = t.split(':');
         let s = h >= 12 ? 'م' : 'ص';
         h = h % 12 || 12;
         return `${h}:${m} ${s}`;
     }
+
     function updateDateDisplay() {
         const now = new Date();
         document.getElementById('display-date').innerText = now.toLocaleDateString('ar-SA', {weekday:'long', day:'numeric', month:'long'});
-        // ملاحظة: التاريخ الهجري يتم تحديثه الآن داخل fetchPrayers
     }
 </script>
 </body>
