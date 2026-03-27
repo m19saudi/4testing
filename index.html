@@ -277,27 +277,18 @@ if ('serviceWorker' in navigator) {
 }
 
     async function fetchPrayers() {
-    const url = 'https://api.aladhan.com/v1/timingsByCity?city=Al%20Mubarraz&country=Saudi%20Arabia&method=4';
-    try {
-        const res = await fetch(url);
-        const data = await res.json();
-        pTimes = data.data.timings;
-
-        // --- سطر التجربة الوهمي (أضفه هنا) ---
-        const now = new Date();
-        // جعل صلاة الفجر قبل 5 دقائق من الآن بالضبط
-        const testTime = new Date(now.getTime() - 5 * 60000); 
-        const h = testTime.getHours().toString().padStart(2, '0');
-        const m = testTime.getMinutes().toString().padStart(2, '0');
-        
-        pTimes.Fajr = `${h}:${m}`; 
-        // ----------------------------------
-
-        document.getElementById('hijri-status').innerText = data.data.date.hijri.day + " " + data.data.date.hijri.month.ar + " " + data.data.date.hijri.year + " هـ";
-        updateWidget();
-    } catch(e) { console.log(e); }
-}
-    
+        const url = 'https://api.aladhan.com/v1/timingsByCity?city=Al%20Mubarraz&country=Saudi%20Arabia&method=4';
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            pTimes = data.data.timings;
+            const h = data.data.date.hijri;
+            document.getElementById('hijri-status').innerText = h.day + " " + h.month.ar + " " + h.year + " هـ";
+            updateWidget();
+        } catch(e) { 
+            document.getElementById('hijri-status').innerText = "خطأ في الاتصال";
+        }
+    }
 
     function tick() {
         updateDateDisplay();
@@ -511,6 +502,10 @@ function checkReminders() {
     const labels = {Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء'};
 
     for (let k in labels) {
+        // --- إضافة هذا السطر لتجاهل الفجر ---
+        if (k === 'Fajr') continue;
+        //
+        
         const [h, m] = pTimes[k].split(':');
         const pTime = new Date(); pTime.setHours(h, m, 0);
         const alertTime = new Date(pTime.getTime() + 5 * 60000); // وقت الأذان + 5 دقائق
@@ -533,7 +528,6 @@ function sendNotification(title, body) {
             reg.showNotification(title, {
                 body: body,
                 icon: 'https://athkarapp.com/images/athkarLogo.png',
-                vibrate: [300, 100, 300, 100, 300], // هزة متقطعة لثانيتين
                 badge: 'https://athkarapp.com/images/athkarLogo.png',
                 tag: 'prayer-reminder' // لمنع تكرار الإشعارات المتراكمة
             });
@@ -547,6 +541,61 @@ window.addEventListener('click', () => {
         Notification.requestPermission();
     }
 }, { once: true });
+
+
+// --- الجزء الأول: تسجيل المحرك آلياً (بدون ملف خارجي) ---
+if ('serviceWorker' in navigator) {
+    const swCode = `
+        self.addEventListener('install', e => self.skipWaiting());
+        self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+    `;
+    const blob = new Blob([swCode], { type: 'application/javascript' });
+    navigator.serviceWorker.register(URL.createObjectURL(blob));
+}
+
+// --- الجزء الثاني: منطق التكرار كل 5 دقائق ---
+let testInterval = null;
+
+function startAutoTest() {
+    // طلب الإذن أولاً
+    Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+            console.log("بدأ الاختبار التلقائي: إشعار كل 5 دقائق");
+            
+            // إرسال أول إشعار فوراً للتأكد
+            sendTestNotify("بدء الاختبار", "سيوصلك إشعار كل 5 دقائق من الآن.");
+
+            // تكرار الإرسال كل 5 دقائق (300,000 ميلي ثانية)
+            testInterval = setInterval(() => {
+                sendTestNotify("تنبيه دوري", "مرت 5 دقائق أخرى بنجاح.");
+            }, 5 * 60 * 1000);
+        }
+    });
+}
+
+// --- الجزء الثالث: دالة الإرسال (صامتة وبدون اهتزاز) ---
+function sendTestNotify(title, body) {
+    navigator.serviceWorker.ready.then(reg => {
+        reg.showNotification(title, {
+            body: body,
+            icon: 'https://athkarapp.com/images/athkarLogo.png',
+            badge: 'https://athkarapp.com/images/athkarLogo.png',
+            tag: 'auto-test', // يمنع تراكم الإشعارات (يحدث الإشعار القديم)
+            // لا يوجد vibrate هنا ليكون صامتاً
+        });
+    });
+}
+
+// تشغيل الاختبار بمجرد ضغط المستخدم على الشاشة
+window.addEventListener('click', startAutoTest, { once: true });
+
+// دالة لإيقاف الاختبار إذا أردت (يمكنك استدعاؤها من الكونسول)
+function stopAutoTest() {
+    if (testInterval) {
+        clearInterval(testInterval);
+        console.log("تم إيقاف الاختبار التلقائي.");
+    }
+}
 </script>
 </body>
 </html>
