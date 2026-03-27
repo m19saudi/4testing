@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>تطبيق الأذكار | Azkar App</title>
+    <link rel="icon" type="image/png" href="https://athkarapp.com/images/athkarLogo.png">
+    <link rel="apple-touch-icon" href="https://athkarapp.com/images/athkarLogo.png">
+    <link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --glass: rgba(255, 255, 255, 0.9);
+            --border: rgba(0, 0, 0, 0.05);
+            --primary: #2d6a4f;
+            --accent: #52b788;
+            --text: #1b4332;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #0f172a;
+            --glass: rgba(30, 41, 59, 0.9);
+            --border: rgba(255, 255, 255, 0.1);
+            --primary: #52b788;
+            --accent: #74c69d;
+            --text: #f1f5f9;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Tajawal', sans-serif; }
+        body { margin: 0; padding: 0; background: var(--bg-color); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        header { background: var(--glass); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border-bottom: 1px solid var(--border); padding: env(safe-area-inset-top) 15px 5px; flex-shrink: 0; z-index: 1000; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 5px; }
+        
+        .nav-tabs { display: flex; overflow-x: auto; gap: 8px; padding: 5px 0; scrollbar-width: none; }
+        .nav-tabs::-webkit-scrollbar { display: none; }
+        .tab { padding: 8px 14px; white-space: nowrap; border-radius: 10px; font-weight: 600; opacity: 0.5; transition: 0.2s; cursor: pointer; }
+        .tab.active { opacity: 1; color: var(--primary); background: rgba(82, 183, 136, 0.15); }
+
+        .content-slider { flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; }
+        section { min-width: 100%; width: 100%; height: 100%; scroll-snap-align: start; overflow-y: auto; padding: 20px; }
+
+        .card { background: var(--glass); border: 1px solid var(--border); border-radius: 20px; padding: 18px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .card:active { transform: scale(0.97); transition: 0.1s; }
+
+        .prayer-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); }
+        .prayer-row.active { background: var(--primary) !important; color: white !important; border-color: transparent; }
+        .prayer-row.active b { color: white; }
+
+        .tasbeeh-card { width: 100%; min-height: 280px; display: flex; align-items: center; justify-content: center; position: relative; }
+        .ring-layout { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
+        .ring-layout svg { position: absolute; width: 100%; height: 100%; transform: rotate(-90deg); }
+        .tasbeeh-count-big { font-size: 4rem; font-weight: 800; color: var(--primary); z-index: 2; }
+        .number-layout { font-size: 7rem; font-weight: 800; color: var(--primary); }
+
+        .green-btn { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 700; width: 100%; margin-top: 5px; }
+        .red-btn { background: #e63946; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 700; width: 100%; }
+        .hidden { display: none !important; }
+        
+        .zikr-item { background: var(--glass); border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 1px solid var(--border); position: relative; }
+        .zikr-item p { margin: 0 0 10px 0; line-height: 1.6; font-size: 1.05rem; }
+        .completed { opacity: 0.4; border: 1.5px solid var(--accent); transform: scale(0.98); transition: 0.3s; }
+
+        #home-prayer-widget { padding: 12px; margin-top: 10px; }
+        .widget-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .widget-item span { font-size: 0.75rem; opacity: 0.7; }
+        .widget-item b { font-size: 0.85rem; color: var(--primary); }
+    </style>
+</head>
+<body data-theme="light">
+
+<header>
+    <div class="top-bar">
+        <h2>السلام عليكم</h2>
+        <button onclick="toggleTheme()" style="background:none; border:none; font-size:1.4rem;">🌓</button>
+    </div>
+    <div class="nav-tabs" id="navTabs">
+        <div class="tab active" onclick="jump(0)">الرئيسية</div>
+        <div class="tab" onclick="jump(1)">الصلاة</div>
+        <div class="tab" onclick="jump(2)">الصباح</div>
+        <div class="tab" onclick="jump(3)">المساء</div>
+        <div class="tab" onclick="jump(4)">المسبحة</div>
+    </div>
+</header>
+
+<div class="content-slider" id="slider">
+    <section>
+        <div class="card">
+            <div id="display-date" style="font-weight: 700; color: var(--primary); font-size: 1.2rem;">...</div>
+            <div id="hijri-status" style="opacity: 0.8; font-size: 1.1rem; margin-top: 5px;">جاري جلب التاريخ الهجري...</div>
+            <div id="next-prayer-countdown" style="margin-top: 15px; font-weight: 600;">...</div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="card" onclick="jump(2)" style="text-align:center">☀️ أذكار الصباح</div>
+            <div class="card" onclick="jump(3)" style="text-align:center">🌙 أذكار المساء</div>
+            <div class="card" onclick="jump(1)" style="text-align:center">🕌 مواقيت الصلاة</div>
+            <div class="card" onclick="jump(4)" style="text-align:center">📿 المسبحة</div>
+        </div>
+        
+        <div id="home-prayer-widget" class="card hidden">
+            <div id="widget-list" style="display: flex; justify-content: space-around;"></div>
+        </div>
+    </section>
+
+    <section>
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin:0">مواقيت الصلاة - المبرز</h3>
+                <label style="display: flex; align-items: center; font-size: 0.85rem; cursor: pointer; color: var(--primary);">
+                    عرض في الرئيسية 
+                    <input type="checkbox" id="widget-toggle" onchange="toggleWidgetView()" style="margin-right: 6px; width: 16px; height: 16px;">
+                </label>
+            </div>
+            <div id="prayer-list"></div>
+        </div>
+    </section>
+
+    <section id="morning-section">
+        <h3 style="margin-bottom:15px">أذكار الصباح</h3>
+        <div id="morning-list"></div>
+    </section>
+
+    <section id="evening-section">
+        <h3 style="margin-bottom:15px">أذكار المساء</h3>
+        <div id="evening-list"></div>
+    </section>
+
+    <section>
+        <div class="card tasbeeh-card" onclick="tapTasbeeh()">
+            <div id="style-ring" class="ring-layout">
+                <svg viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="var(--border)" stroke-width="5" />
+                    <circle id="ring-progress" cx="50" cy="50" r="45" fill="none" stroke="var(--primary)" stroke-width="6" 
+                            stroke-dasharray="283" stroke-dashoffset="283" stroke-linecap="round" style="transition:0.2s;"/>
+                </svg>
+                <div class="tasbeeh-count-big counter-val">0</div>
+            </div>
+            <div id="style-number" class="number-layout hidden counter-val">0</div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+            <button class="green-btn" onclick="toggleTasbeehStyle()">تغيير الشكل</button>
+            <button class="red-btn" onclick="resetTasbeeh()">إعادة</button>
+        </div>
+        <select id="t-goal" class="green-btn" onchange="resetTasbeeh()" style="appearance: none; text-align-last: center;">
+            <option value="999999">الهدف: حر</option>
+            <option value="33">الهدف: 33</option>
+            <option value="100">الهدف: 100</option>
+        </select>
+    </section>
+</div>
+
+<script>
+    let pTimes = null;
+    let state = {
+        tasbeeh: parseInt(localStorage.getItem('t_v')) || 0,
+        m_counts: JSON.parse(localStorage.getItem('m_c')) || [],
+        e_counts: JSON.parse(localStorage.getItem('e_c')) || [],
+        theme: localStorage.getItem('theme') || 'light',
+        t_style: localStorage.getItem('t_style') || 'ring',
+        showWidget: localStorage.getItem('show_w') === 'true'
+    };
+
+    const MORNING_DATA = [
+        { t: "آية الكرسي: اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ..", g: 1 },
+        { t: "أصبحنا وأصبح الملك لله، والحمد لله، لا إله إلا الله وحده لا شريك له", g: 1 },
+        { t: "اللهم أنت ربي لا إله إلا أنت، خلقتني وأنا عبدك، وأنا على عهدك ووعدك ما استطعت", g: 1 },
+        { t: "بسم الله الذي لا يضر مع اسمه شيء في الأرض ولا في السماء وهو السميع العليم", g: 3 },
+        { t: "رضيت بالله رباً، وبالإسلام ديناً، وبمحمد صلى الله عليه وسلم نبياً", g: 3 },
+        { t: "يا حي يا قيوم برحمتك أستغيث أصلح لي شأني كله ولا تكلني إلى نفسي طرفة عين", g: 1 },
+        { t: "سُبْحَانَ اللهِ وَبِحَمْدِهِ: عَدَدَ خَلْقِهِ، وَرِضَا نَفْسِهِ، وَزِنَةَ عَرْشِهِ، وَمِدَادَ كَلِمَاتِهِ", g: 3 },
+        { t: "اللهم بك أصبحنا، وبك أمسينا، وبك نحيا، وبك نموت، وإليك النشور", g: 1 },
+        { t: "أصبحنا على فطرة الإسلام وعلى كلمة الإخلاص وعلى دين نبينا محمد", g: 1 },
+        { t: "سبحان الله وبحمده", g: 100 }
+    ];
+
+    const EVENING_DATA = [
+        { t: "آية الكرسي: اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ..", g: 1 },
+        { t: "أمسينا وأمسى الملك لله، والحمد لله، لا إله إلا الله وحده لا شريك له", g: 1 },
+        { t: "اللهم أنت ربي لا إله إلا أنت، خلقتني وأنا عبدك، وأنا على عهدك ووعدك ما استطعت", g: 1 },
+        { t: "بسم الله الذي لا يضر مع اسمه شيء في الأرض ولا في السماء وهو السميع العليم", g: 3 },
+        { t: "أعوذ بكلمات الله التامات من شر ما خلق", g: 3 },
+        { t: "رضيت بالله رباً، وبالإسلام ديناً، وبمحمد صلى الله عليه وسلم نبياً", g: 3 },
+        { t: "يا حي يا قيوم برحمتك أستغيث أصلح لي شأني كله ولا تكلني إلى نفسي طرفة عين", g: 1 },
+        { t: "اللهم بك أمسينا، وبك أصبحنا، وبك نحيا، وبك نموت، وإليك المصير", g: 1 },
+        { t: "اللهم صل وسلم على نبينا محمد", g: 10 },
+        { t: "سبحان الله وبحمده", g: 100 }
+    ];
+
+    if (state.m_counts.length === 0) state.m_counts = new Array(MORNING_DATA.length).fill(0);
+    if (state.e_counts.length === 0) state.e_counts = new Array(EVENING_DATA.length).fill(0);
+
+    window.onload = () => {
+        document.body.setAttribute('data-theme', state.theme);
+        document.getElementById('widget-toggle').checked = state.showWidget;
+        applyTasbeehStyle();
+        updateDateDisplay();
+        fetchPrayers();
+        updateTasbeehUI();
+        renderAzkar('morning', MORNING_DATA, state.m_counts);
+        renderAzkar('evening', EVENING_DATA, state.e_counts);
+        updateWidgetVisibility();
+        
+        const slider = document.getElementById('slider');
+        slider.addEventListener('scroll', () => {
+            const i = Math.round(Math.abs(slider.scrollLeft) / window.innerWidth);
+            document.querySelectorAll('.tab').forEach((t, idx) => t.classList.toggle('active', idx === i));
+        });
+        setInterval(tick, 1000);
+    };
+
+    async function fetchPrayers() {
+        const url = 'https://api.aladhan.com/v1/timingsByCity?city=Al%20Mubarraz&country=Saudi%20Arabia&method=4';
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            pTimes = data.data.timings;
+            
+            // تحديث التاريخ الهجري من الرابط (الميزة التي طلبتها)
+            const h = data.data.date.hijri;
+            document.getElementById('hijri-status').innerText = h.day + " " + h.month.ar + " " + h.year + " هـ";
+            
+            updateWidget();
+        } catch(e) { 
+            console.error("Error fetching prayers");
+            document.getElementById('hijri-status').innerText = "خطأ في الاتصال";
+        }
+    }
+
+    function tick() {
+        updateDateDisplay();
+        if(pTimes) {
+            renderPrayerList();
+            updateCountdown();
+        }
+    }
+
+    function updateWidget() {
+        if(!pTimes) return;
+        const labels = {Fajr:'فجر', Dhuhr:'ظهر', Asr:'عصر', Maghrib:'مغرب', Isha:'عشاء'};
+        let html = '';
+        Object.keys(labels).forEach(k => {
+            html += `<div class="widget-item"><span>${labels[k]}</span><b>${pTimes[k]}</b></div>`;
+        });
+        document.getElementById('widget-list').innerHTML = html;
+    }
+
+    function toggleWidgetView() {
+        state.showWidget = document.getElementById('widget-toggle').checked;
+        localStorage.setItem('show_w', state.showWidget);
+        updateWidgetVisibility();
+    }
+
+    function updateWidgetVisibility() {
+        document.getElementById('home-prayer-widget').classList.toggle('hidden', !state.showWidget);
+    }
+
+    function renderPrayerList() {
+        const container = document.getElementById('prayer-list');
+        const labels = {Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء'};
+        const now = new Date();
+        const keys = Object.keys(labels);
+        
+        let nextI = -1;
+        for (let i = 0; i < keys.length; i++) {
+            const [h, m] = pTimes[keys[i]].split(':');
+            const pDate = new Date(); pDate.setHours(h, m, 0);
+            if (now < pDate) { nextI = i; break; }
+        }
+
+        let html = '';
+        keys.forEach((k, i) => {
+            const isActive = (i === nextI) ? 'active' : '';
+            html += `<div class="prayer-row ${isActive}"><span>${labels[k]}</span><b>${format12(pTimes[k])}</b></div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function updateCountdown() {
+        const now = new Date();
+        const labels = {Fajr:'الفجر', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء'};
+        const iqamaMins = {Fajr:15, Dhuhr:15, Asr:15, Maghrib:10, Isha:10};
+        const keys = Object.keys(labels);
+        let displayNode = document.getElementById('next-prayer-countdown');
+        let currentPrayer = null;
+        let nextPrayer = null;
+
+        for (let k of keys) {
+            const [h, m] = pTimes[k].split(':');
+            const prayerTime = new Date(); prayerTime.setHours(h, m, 0);
+            const iqamaTime = new Date(prayerTime.getTime() + iqamaMins[k] * 60000);
+            if (now >= prayerTime && now < iqamaTime) { currentPrayer = { name: labels[k], time: iqamaTime }; break; }
+        }
+
+        if (currentPrayer) {
+            const diff = Math.floor((currentPrayer.time - now) / 1000);
+            const mm = Math.floor(diff / 60); const ss = diff % 60;
+            displayNode.innerHTML = `<span style="color: #e63946;">دخل وقت أذان ${currentPrayer.name}</span><br>باقي على الإقامة: ${mm}:${ss < 10 ? '0'+ss : ss}`;
+        } else {
+            for (let k of keys) {
+                const [h, m] = pTimes[k].split(':');
+                const d = new Date(); d.setHours(h, m, 0);
+                if (d > now) { nextPrayer = { n: labels[k], t: d }; break; }
+            }
+            if (!nextPrayer) {
+                const [h, m] = pTimes.Fajr.split(':');
+                const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(h, m, 0);
+                nextPrayer = { n: 'الفجر', t: d };
+            }
+            const diff = Math.floor((nextPrayer.t - now) / 1000);
+            const hh = Math.floor(diff / 3600); const mm = Math.floor((diff % 3600) / 60); const ss = diff % 60;
+            displayNode.innerText = `صلاة ${nextPrayer.n} خلال ${hh}:${mm < 10 ? '0'+mm : mm}:${ss < 10 ? '0'+ss : ss}`;
+        }
+    }
+
+    function renderAzkar(type, data, counts) {
+        const c = document.getElementById(`${type}-list`);
+        c.innerHTML = '';
+        data.forEach((z, i) => {
+            const div = document.createElement('div');
+            const isDone = counts[i] >= z.g;
+            div.className = `zikr-item ${isDone ? 'completed' : ''}`;
+            div.innerHTML = `<p>${z.t}</p><button class="green-btn" onclick="incZ('${type}',${i})">${counts[i]} / ${z.g}</button>`;
+            c.appendChild(div);
+        });
+    }
+
+    function incZ(type, i) {
+        let counts = type === 'morning' ? state.m_counts : state.e_counts;
+        let data = type === 'morning' ? MORNING_DATA : EVENING_DATA;
+        if(counts[i] < data[i].g) {
+            counts[i]++;
+            localStorage.setItem(type === 'morning' ? 'm_c' : 'e_c', JSON.stringify(counts));
+            renderAzkar(type, data, counts);
+            if(navigator.vibrate) navigator.vibrate(35);
+        }
+    }
+
+    function tapTasbeeh() {
+        state.tasbeeh++;
+        const goal = parseInt(document.getElementById('t-goal').value);
+        if(state.tasbeeh > goal) state.tasbeeh = 1;
+        updateTasbeehUI();
+        localStorage.setItem('t_v', state.tasbeeh);
+        if(navigator.vibrate) navigator.vibrate(45);
+    }
+
+    function updateTasbeehUI() {
+        const goal = parseInt(document.getElementById('t-goal').value);
+        document.querySelectorAll('.counter-val').forEach(el => el.innerText = state.tasbeeh);
+        const offset = 283 - (Math.min(state.tasbeeh, goal) / goal) * 283;
+        document.getElementById('ring-progress').style.strokeDashoffset = offset;
+    }
+
+    function toggleTasbeehStyle() {
+        state.t_style = state.t_style === 'ring' ? 'number' : 'ring';
+        localStorage.setItem('t_style', state.t_style);
+        applyTasbeehStyle();
+    }
+
+    function applyTasbeehStyle() {
+        document.getElementById('style-ring').classList.toggle('hidden', state.t_style !== 'ring');
+        document.getElementById('style-number').classList.toggle('hidden', state.t_style !== 'number');
+    }
+
+    function resetTasbeeh() { state.tasbeeh = 0; updateTasbeehUI(); localStorage.setItem('t_v', 0); }
+    function jump(i) { document.getElementById('slider').scrollTo({ left: -window.innerWidth * i, behavior: 'smooth' }); }
+    function toggleTheme() {
+        state.theme = state.theme === 'light' ? 'dark' : 'light';
+        document.body.setAttribute('data-theme', state.theme);
+        localStorage.setItem('theme', state.theme);
+    }
+    function format12(t) {
+        let [h, m] = t.split(':');
+        let s = h >= 12 ? 'م' : 'ص';
+        h = h % 12 || 12;
+        return `${h}:${m} ${s}`;
+    }
+    function updateDateDisplay() {
+        const now = new Date();
+        document.getElementById('display-date').innerText = now.toLocaleDateString('ar-SA', {weekday:'long', day:'numeric', month:'long'});
+        // ملاحظة: التاريخ الهجري يتم تحديثه الآن داخل fetchPrayers
+    }
+</script>
+</body>
+</html>

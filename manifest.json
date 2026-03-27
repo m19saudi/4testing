@@ -1,0 +1,16 @@
+{
+  "name": "تطبيق الأذكار",
+  "short_name": "الأذكار",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f4f7f6",
+  "theme_color": "#2d6a4f",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://athkarapp.com/images/athkarLogo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
